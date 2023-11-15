@@ -1,0 +1,44 @@
+import boto3
+import datetime
+
+def lambda_handler(event, context):
+    # 대상 EC2 인스턴스의 인스턴스 ID를 입력
+    ec2_instance_id = 'i-0473d0777d49898df'
+
+    # AWS 서비스 클라이언트 생성
+    ec2_client = boto3.client('ec2')
+
+    # 대상 EC2의 Name 태그 조회
+    response = ec2_client.describe_instances(InstanceIds=[ec2_instance_id])
+    name_tag = None
+
+    # EC2의 Name 태그 찾기
+    for tag in response['Reservations'][0]['Instances'][0]['Tags']:
+        if tag['Key'] == 'Name':
+            name_tag = tag['Value']
+            break
+
+    # AMI 생성
+    response = ec2_client.create_image(
+        InstanceId=ec2_instance_id,
+        Name=f"{name_tag}-backup-{datetime.datetime.now().strftime('%Y-%m-%d')}",
+        NoReboot=True,  # ec2 재부팅 안함 옵션
+        TagSpecifications=[
+            {
+                'ResourceType': 'image',
+                'Tags': [
+                    {
+                        'Key': 'Name',
+                        'Value': f"{name_tag}-backup-{datetime.datetime.now().strftime('%Y-%m-%d')}"
+                    },
+                ]
+            },
+        ]
+    )
+
+    print(f"AMI 생성이 완료되었습니다. AMI ID: {response['ImageId']}")
+
+    return {
+        'statusCode': 200,
+        'body': f"AMI 생성이 완료되었습니다. AMI ID: {response['ImageId']}"
+    }
