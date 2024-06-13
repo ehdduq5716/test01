@@ -1,0 +1,17 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: efs-pvc-mount-test 
+spec:
+  containers:
+  - name: nginx-container
+    image: nginx:latest
+    ports:
+    - containerPort: 80
+    volumeMounts:
+    - name: efs-volume
+      mountPath: /usr/local/src/nginx/log
+  volumes:
+  - name: efs-volume
+    persistentVolumeClaim:
+      claimName: efs-sc-pvc
